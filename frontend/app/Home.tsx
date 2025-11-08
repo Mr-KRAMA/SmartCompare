@@ -1,0 +1,223 @@
+import React, { useState } from 'react'
+import { useSpring, animated, config } from 'react-spring'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Search, Smartphone, Laptop, Headphones, ArrowRight, Star } from 'lucide-react'
+import { useEffect } from 'react'; 
+import About from './about.tsx'
+import Link from 'next/link'
+
+export default function HomepageDarkAnimated() {
+  const [hoveredProduct, setHoveredProduct] = useState(null)
+  const products = [
+    {
+      id: 1,
+      name: "iPhone 13",
+      category: "Smartphones",
+      image: "https://www.ohlocal.in/_next/image?url=https%3A%2F%2Fohlocal-media.s3.amazonaws.com%2Fmedia%2FSM105599AP.jpg&w=750&q=75",
+      rating: 4.8,
+      price: "42,999",
+      specs: {
+        display: "6.1-inch Super Retina XDR",
+        camera: "Triple 12MP camera system",
+        battery: "Up to 22 hours video playback"
+      }
+    },
+    {
+      id: 2,
+      name: "Samsung Galaxy S21",
+      category: "Smartphones",
+      image: "https://media-ik.croma.com/prod/https://media.croma.com/image/upload/v1708675087/Croma%20Assets/Communication/Mobiles/Images/247560_0_i07ab6.png?tr=w-600",
+      rating: 4.7,
+      price: "27,999",
+      specs: {
+        display: "6.2-inch Dynamic AMOLED 2X",
+        camera: "Triple camera with 64MP main",
+        battery: "4000mAh"
+      }
+    },
+    {
+      id: 3,
+      name: "MacBook Pro 14",
+      category: "Laptops",
+      image: "https://inventstore.in/staging/wp-content/uploads/2023/05/MacBook-Pro-M2-Pro-Chip-14-spacegray.png",
+      rating: 4.9,
+      price: "1,55,990",
+      specs: {
+        processor: "Apple M1 Pro",
+        memory: "16GB unified memory",
+        storage: "512GB SSD"
+      }
+    },
+    {
+      id: 4,
+      name: "Sony WH-1000XM4",
+      category: "Headphones",
+      image: "https://cdn.shakedeal.com/images/detailed/805/SDSNY0006100_56so-ed.png",
+      rating: 4.8,
+      price: "19,988",
+      specs: {
+        type: "Over-ear",
+        noiseCancelling: "Industry-leading",
+        batteryLife: "Up to 30 hours"
+      }
+    }
+  ]
+
+  const fadeIn = useSpring({
+    from: { opacity: 0, transform: 'translateY(20px)' },
+    to: { opacity: 1, transform: 'translateY(0)' },
+    config: config.gentle,
+  })
+
+  const logoAnimation = useSpring({
+    from: { opacity: 0, transform: 'scale(0.8)' },
+    to: { opacity: 1, transform: 'scale(1)' },
+    config: config.wobbly,
+  })
+
+  const searchAnimation = useSpring({
+    from: { width: '80%', opacity: 0 },
+    to: { width: '100%', opacity: 1 },
+    config: config.gentle,
+  })
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-gray-100">
+      <header className="container mx-auto px-4 py-6">
+        <nav className="flex justify-between items-center">
+          <animated.h1 style={logoAnimation} className="text-2xl font-bold text-blue-400">
+            SmartProduct
+          </animated.h1>
+          <div className="flex space-x-4">
+            <Button variant="ghost" className="text-gray-300 hover:text-gray-900 hover:bg-white">Home</Button>
+            <Button variant="ghost" className="text-gray-300 hover:bg-white hover:text-gray-900">Categories</Button>
+            <Button variant="ghost" className="text-gray-300 hover:text-gray-900 hover:bg-white">About</Button>
+            <Button variant="ghost" className="text-gray-300 hover:text-gray-900 hover:bg-white">Contact</Button>
+          </div>
+        </nav>
+      </header>
+
+      <main className="container mx-auto px-4 py-12">
+        {/* Hero Section */}
+        <animated.section style={fadeIn} className="text-center mb-16">
+          <h1 className="text-4xl font-bold mb-4 text-blue-300">Compare Smart Products Easily</h1>
+          <p className="text-xl text-gray-400 mb-8">Find the best product for you with our advanced comparison tools</p>
+          <div className="flex justify-center mb-8">
+            <animated.div style={searchAnimation} className="relative w-full max-w-xl">
+              <Input 
+                type="text" 
+                placeholder="Search for products to compare..." 
+                className="w-full pl-10 pr-4 py-3 rounded-full bg-gray-800 text-white border-gray-700 focus:border-blue-500"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+            </animated.div>
+          </div>
+          <div className="flex justify-center space-x-4">
+          <Link href="/devices/" passHref>
+            <Button variant="outline" className="bg-gray-800 text-blue-400 border-blue-400 hover:bg-blue-400 hover:text-gray-900" >
+              <Smartphone className="mr-2 h-4 w-4" /> Compare Phones
+            </Button>
+          </Link>
+            <Button variant="outline" className="bg-gray-800 text-blue-400 border-blue-400 hover:bg-blue-400 hover:text-gray-900">
+              <Laptop className="mr-2 h-4 w-4" /> Compare Laptops
+            </Button>
+            <Button variant="outline" className="bg-gray-800 text-blue-400 border-blue-400 hover:bg-blue-400 hover:text-gray-900">
+              <Headphones className="mr-2 h-4 w-4" /> Compare Headphones
+            </Button>
+          </div>
+        </animated.section>
+
+        {/* Featured Products */}
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold mb-6 text-blue-300">Featured Products</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {products.map((product) => (
+              <animated.div
+                key={product.id}
+                style={useSpring({
+                  transform: hoveredProduct === product.id ? 'scale(1.05)' : 'scale(1)',
+                  boxShadow: hoveredProduct === product.id ? '0 10px 20px rgba(0,0,0,0.2)' : '0 0 0 rgba(0,0,0,0)',
+                })}
+                onMouseEnter={() => setHoveredProduct(product.id)}
+                onMouseLeave={() => setHoveredProduct(null)}
+              >
+                <Card className="flex flex-col bg-gray-800 border-gray-700 h-full">
+                  <CardHeader>
+                    <img src={product.image} alt={product.name} className="w-full h-48 object-contain mb-4" />
+                    <CardTitle className="text-blue-300">{product.name}</CardTitle>
+                    <CardDescription className="text-gray-400">{product.category}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    <div className="flex justify-between items-center mb-4">
+                      <Badge variant="secondary" className="bg-blue-900 text-blue-200"> ₹{product.price}</Badge>
+                      <div className="flex items-center">
+                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mr-1" />
+                        <span className="text-gray-300">{product.rating}</span>
+                      </div>
+                    </div>
+                    <Tabs defaultValue="specs">
+                      <TabsList className="grid w-full grid-cols-2 bg-gray-700">
+                        <TabsTrigger value="specs" className="data-[state=active]:bg-gray-600">Specs</TabsTrigger>
+                        <TabsTrigger value="compare" className="data-[state=active]:bg-gray-600">Compare</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="specs">
+                        <ul className="text-sm space-y-1 text-gray-300">
+                          {Object.entries(product.specs).map(([key, value]) => (
+                            <li key={key} className="flex justify-between">
+                              <span className="font-medium text-gray-400">{key}:</span>
+                              <span>{value}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </TabsContent>
+                      <TabsContent value="compare">
+                        <p className="text-sm text-gray-400">Select this product to compare with others in its category.</p>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                  <CardFooter>
+                    <Button className="w-full bg-blue-600 text-white hover:bg-blue-700">
+                      Compare <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </animated.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Call to Action */}
+        <animated.section style={fadeIn} className="text-center">
+          <h2 className="text-3xl font-bold mb-4 text-blue-300">Ready to Find Your Perfect Product?</h2>
+          <p className="text-xl text-gray-400 mb-8">Start comparing now and make an informed decision</p>
+          <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700">
+            Start Comparing Now <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </animated.section>
+      </main>
+
+      <footer className="bg-gray-900 text-gray-300 mt-16 py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-4 md:mb-0">
+              <h2 className="text-2xl font-bold text-blue-400">SmartProduct</h2>
+              <p className="text-gray-400">Making product comparisons easy</p>
+            </div>
+            <div className="flex space-x-4">
+              <Button variant="ghost" className="text-gray-400 hover:text-white">Privacy Policy</Button>
+              <Button variant="ghost" className="text-gray-400 hover:text-white">Terms of Service</Button>
+              <Button variant="ghost" className="text-gray-400 hover:text-white">Contact Us</Button>
+            </div>
+          </div>
+          <div className="mt-8 text-center text-gray-500">
+            <p>&copy; 2023 SmartProduct. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}

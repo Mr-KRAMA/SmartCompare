@@ -1,0 +1,58 @@
+import urllib.parse
+import asyncio
+from playwright.async_api import async_playwright
+
+async def scrape_with_playwright(query):
+    encoded_query = urllib.parse.quote(query)
+    url = f'https://www.smartprix.com/products/?q={encoded_query}'
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+
+        print(f"Navigating to: {url}")
+        await page.goto(url)  # wait until JS loads fully
+
+        try:
+            # Wait for at least one product to appear
+            await page.wait_for_selector('div.sm-product')
+
+            product_elements = await page.query_selector_all('div.sm-product')
+            print(f"Found {len(product_elements)} products")
+            results = []
+
+            for product in product_elements[:10]:
+                try:
+                    name_elem = await product.query_selector('a.name.clamp-2')
+                    name = await name_elem.inner_text() if name_elem else "N/A"
+                    link = await name_elem.get_attribute('href') if name_elem else "N/A"
+
+                    price_elem = await product.query_selector('span.price')
+                    price = await price_elem.inner_text() if price_elem else "N/A"
+
+                    img_elem = await product.query_selector('img.sm-img')
+                    img = await img_elem.get_attribute('src') if img_elem else "N/A"
+
+                    results.append({
+                        'name': name.strip(),
+                        'price': price.strip(),
+                        'img': img,
+                        'link': f"https://www.smartprix.com{link}" if link and not link.startswith("http") else link
+                    })
+                except Exception as e:
+                    print(f"Error parsing product: {e}")
+                    continue
+
+            await browser.close()
+            return results
+        except Exception as e:
+            print(f"Failed to load content: {e}")
+            await browser.close()
+            return []
+
+# Example usage
+if __name__ == "__main__":
+    query = "oppo"
+    results = asyncio.run(scrape_with_playwright(query))
+    for item in results:
+        print(item)

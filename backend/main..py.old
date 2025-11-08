@@ -1,0 +1,275 @@
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+import time
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import requests
+from bs4 import BeautifulSoup
+
+app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # Adjust this to your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Referer": "https://www.google.com/",
+    "DNT": "1",
+    "Upgrade-Insecure-Requests": "1",
+}
+
+def init_driver():
+    # Initialize the Firefox WebDriver (make sure you have the necessary Firefox drivers installed)
+    from selenium.webdriver.firefox.options import Options
+    options = Options()
+    options.add_argument("--headless")  # Headless mode
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    driver = webdriver.Firefox(options=options)
+    return driver
+
+def scrape_smartprix(driver,query):
+    # Smartprix scraper
+    driver.get(f'https://www.smartprix.com/{query}')
+    time.sleep(3)
+
+    try:
+        # Initialize WebDriverWait
+        wait = WebDriverWait(driver, 10)  # 10 seconds timeout
+        # Wait until the elements are present
+        wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.sm-product.has-tag.has-features.has-actions')))
+
+        # Find products
+        products = driver.find_elements(By.CSS_SELECTOR, 'div.sm-product.has-tag.has-features.has-actions')
+        results = []
+        print(f"Number of products found: {len(products)}")  # Check if products are found
+
+        for product in products[:10]:  # Limit to 10 products
+            try:
+                name = product.find_element(By.CSS_SELECTOR, 'a.name.clamp-2').text
+                price = product.find_element(By.CSS_SELECTOR, 'span.price').text
+                img = product.find_element(By.CSS_SELECTOR, 'img.sm-img').get_attribute('src')
+                link = product.find_element(By.CSS_SELECTOR, 'a.name.clamp-2').get_attribute('href')
+                results.append({
+                    'name': name,
+                    'price': price,
+                    'img': img,
+                    'link': link
+                })
+            except Exception as e:
+                print(f"Error while scraping a product: {str(e)}")
+                continue  # Skip the product in case of error
+
+        return results
+    except Exception as e:
+        print(f"Failed to retrieve details from Smartprix: {str(e)}")
+        return []
+
+
+#https://www.smartprix.com/products/?q=motorola%20edge%2050%20fusion
+import urllib.parse
+
+
+def scrape_search(driver,query):
+    # Smartprix scraper
+    encoded_url = urllib.parse.quote(query)
+    driver.get(f'https://www.smartprix.com/products/?q={encoded_url}')
+
+    try:
+        # Initialize WebDriverWait
+        wait = WebDriverWait(driver, 10)  # 10 seconds timeout
+        # Wait until the elements are present
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.sm-product.has-tag.has-features.has-actions')))
+
+        # Find products
+        products = driver.find_elements(By.CSS_SELECTOR, 'div.sm-product.has-tag.has-features.has-actions')
+        results = []
+        print(f"Number of products found: {len(products)}")  # Check if products are found
+
+        for product in products[:10]:  # Limit to 10 products
+            try:
+                name = product.find_element(By.CSS_SELECTOR, 'a.name.clamp-2').text
+                price = product.find_element(By.CSS_SELECTOR, 'span.price').text
+                img = product.find_element(By.CSS_SELECTOR, 'img.sm-img').get_attribute('src')
+                link = product.find_element(By.CSS_SELECTOR, 'a.name.clamp-2').get_attribute('href')
+                results.append({
+                    'name': name,
+                    'price': price,
+                    'img': img,
+                    'link': link
+                })
+            except Exception as e:
+                print(f"Error while scraping a product: {str(e)}")
+                continue  # Skip the product in case of error
+
+        return results
+    except Exception as e:
+        print(f"Failed to retrieve details from Smartprix: {str(e)}")
+        return []
+
+
+# Scraping logic encapsulated into a function
+def scrape_smartprix_product(url: str):
+    # Set headers to mimic a browser request
+    headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Referer": "https://www.google.com/",
+    "DNT": "1",
+    "Upgrade-Insecure-Requests": "1",
+}
+
+    # Send a GET request to the URL with headers
+    link = f'https://www.smartprix.com/{url}'
+    response = requests.get(link, headers=headers)
+
+    if response.status_code != 200:
+        return {"error": f"Failed to retrieve page: {response.status_code}"}
+
+    # Parse the HTML content using BeautifulSoup
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Extract product name
+    product_name_div = soup.find('div', class_='pg-prd-head')
+    product_name = product_name_div.find('h1').text.strip() if product_name_div else 'N/A'
+    
+    # Extract main price if available
+    price_tag = soup.find('div', class_='price')
+    product_price = price_tag.text.strip() if price_tag else 'N/A'
+    
+    # Extract specifications from 'sm-quick-specs' section
+    specs = {}
+    specs_section = soup.find('div', class_='sm-quick-specs')
+    
+    if specs_section:
+        ul_groups = specs_section.find_all('ul', class_='group')
+        for ul in ul_groups:
+            li_items = ul.find_all('li')
+            for li in li_items:
+                spans = li.find_all('span')
+                if len(spans) >= 2:
+                    key = spans[0].text.strip()
+                    value = spans[1].text.strip()
+                    specs[key] = value
+
+    # Extract e-commerce listings under 'sm-box-item sm-pc-item'
+    ecom_details = []
+    ecom_section = soup.find_all('div', class_='sm-box-item sm-pc-item')
+
+    if ecom_section:
+        for ecom_item in ecom_section:
+            # Extract e-commerce image URL
+            image_tag = ecom_item.find('img', class_='sm-img')
+            image_url = image_tag['src'] if image_tag else 'No image'
+
+            # Extract price
+            price_tag = ecom_item.find('div', class_='price')
+            price_text = price_tag.text.strip() if price_tag else 'No price'
+
+            ecom_details.append({
+                'image_url': image_url,
+                'price': price_text
+            })
+
+    # Scraping related products
+    related_products = []
+    product_containers = soup.find_all("div", class_="sm-product")
+    
+    for product in product_containers:
+        img_tag = product.find("img", class_="sm-img")
+        name_tag = product.find("a", class_="name clamp-2")
+        price_tag = product.find("span", class_="price")
+
+        if img_tag and name_tag and price_tag:
+            related_product = {
+                "image_url": img_tag["src"],
+                "name": name_tag.text.strip(),
+                "price": price_tag.text.strip(),
+                "link": name_tag["href"],  # Optional: link to the product
+            }
+            related_products.append(related_product)
+
+    # Return all scraped data
+    return {
+        'product_name': product_name,
+        'product_price': product_price,
+        'specifications': specs,
+        'ecommerce_listings': ecom_details,
+        'related_products': related_products
+    }
+
+def get_amazon_images(product_url: str):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+    }
+    
+    # Make a request to the Amazon product page
+    response = requests.get(product_url, headers=headers)
+    
+    # Check if the request was successful
+    if response.status_code != 200:
+        return []
+
+    # Parse the HTML response
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Find all the image containers
+    image_containers = soup.find_all('div', class_='a-section aok-relative s-image-fixed-height')
+
+    # Extract image URLs
+    img_urls = []
+    for container in image_containers:
+        img_tag = container.find('img', class_='s-image')
+        if img_tag and 'src' in img_tag.attrs:
+            img_urls.append(img_tag['src'])
+
+    return img_urls
+
+
+# API endpoint for scraping products
+@app.get("/scrape/{query}")
+async def get_products(query: str):
+    driver = init_driver()
+    products = scrape_smartprix(driver, query)
+    driver.quit()
+    return products
+    #return {"products": products}
+
+@app.get("/search/{query}")
+async def get_search(query: str):
+    driver = init_driver()
+    products = scrape_search(driver,query)
+    driver.quit()
+    #return {"products": products}
+    return products
+
+@app.get("/details/{link:path}")
+async def get_details(link: str):
+    products = scrape_smartprix_product(link)
+    # Call the function to get image URLs from Google Images
+    s = link.split('/')[-1]
+    url = f"https://www.amazon.in/s?k={s.replace(' ','+')}"
+    image_urls = get_amazon_images(url)  # Use relevant search query here
+
+    # Add image URLs to product data
+    products["image_urls"] = image_urls
+    return JSONResponse(content=products)
+
+
+@app.get("/img/{query}")
+async def get_image(query: str):
+    q = query.replace(" ", "+")
+    url = f'https://www.amazon.in/s?k={q}'
+    print(url)
+    img_urls = get_amazon_images(url)
+    return JSONResponse(content=img_urls)

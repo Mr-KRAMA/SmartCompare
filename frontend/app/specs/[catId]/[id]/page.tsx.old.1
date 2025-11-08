@@ -1,0 +1,165 @@
+"use client"
+import { useEffect, useState } from 'react'
+import { Star, ShoppingCart, Heart } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+interface Specification {
+  [key: string]: string
+}
+
+interface EcommerceListing {
+  image_url: string
+  price: string
+}
+
+interface ProductData {
+  product_name: string
+  product_price: string
+  specifications: Specification
+  ecommerce_listings: EcommerceListing[]
+}
+
+export default function ProductDetail({ params }: { params: { catId: string, id: string } }) {
+  const [productData, setProductData] = useState<ProductData | null>(null)
+  const [activeTab, setActiveTab] = useState('specifications')
+  const [img, setImg] = useState("")
+
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/details/${params.catId}/${params.id}`)
+        const data = await res.json()
+        setProductData(data)
+
+      } catch (error) {
+        console.error("Failed to fetch product details:", error)
+      }
+    }
+
+    fetchProductDetails()
+  }, [params.catId, params.id])
+
+  useEffect(() => {
+    const fetchImg = async () => {
+      const res = await fetch(`http://localhost:8000/`)
+    }
+  })
+
+  if (!productData) {
+    return <div>Loading...</div>
+  }
+
+  const getRatingColor = (rating: string) => {
+    switch (rating.toLowerCase()) {
+      case 'good':
+        return 'text-green-500'
+      case 'average':
+        return 'text-yellow-500'
+      case 'poor':
+        return 'text-red-500'
+      default:
+        return 'text-gray-500'
+    }
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="grid md:grid-cols-2 gap-8">
+        <div>
+          <img src={productData.image_urls[1]} alt={productData.product_name} className="w-full h-auto rounded-lg shadow-lg" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold mb-4">{productData.product_name}</h1>
+          <div className="flex items-center mb-4">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+              ))}
+            </div>
+            <span className="ml-2 text-gray-600">(4.5 out of 5)</span>
+          </div>
+          <p className="text-2xl font-bold mb-4">{productData.product_price}</p>
+          <div className="flex space-x-4 mb-6">
+            <Button>
+              <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
+            </Button>
+            <Button variant="outline">
+              <Heart className="mr-2 h-4 w-4" /> Add to Wishlist
+            </Button>
+          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="specifications">Specifications</TabsTrigger>
+              <TabsTrigger value="ecommerce">E-commerce Listings</TabsTrigger>
+            </TabsList>
+            <TabsContent value="specifications" className="mt-4">
+              <Table>
+                <TableBody>
+                  {Object.entries(productData.specifications).map(([key, value]) => (
+                    <TableRow key={key}>
+                      <TableCell className="font-medium">{key}</TableCell>
+                      <TableCell className={getRatingColor(value)}>{value}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+            <TabsContent value="ecommerce" className="mt-4">
+              <div className="grid gap-4">
+                {productData.ecommerce_listings.map((listing, index) => (
+                  <Card key={index}>
+                    <CardContent className="flex items-center justify-between p-4">
+                      <img src={listing.image_url} alt="E-commerce logo" className="h-8" />
+                      <p className="text-lg font-bold">{listing.price}</p>
+                      <Button>Visit Store</Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* Related Products Section */}
+      {/*}<div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Related Products</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {productData.related_product.map((product, index) => (
+            <Card key={index} className="shadow-md">
+              <CardContent>
+                <img src={product.image_url} alt={product.name} className="h-32 w-full object-cover mb-2" />
+                <h3 className="font-semibold">{product.name}</h3>
+                <p className="text-gray-700">{product.price}</p>
+                <a href={`/specs/${product.link}`} className="text-blue-500 hover:underline">View Product</a>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>*/}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Related Products</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {productData.related_products.map((product, index) => (
+            <Card key={index} className="shadow-md hover:shadow-lg transition-shadow duration-200">
+              <CardHeader>
+                <img src={product.image_url} alt={product.name} className="h-52 w-48 mb-2 rounded-t-lg" />
+                <CardTitle className="text-lg font-semibold">{product.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700">{product.price}</p>
+                <Button className="mt-2 w-full" variant="outline" asChild>
+                  <a href={`/specs/${product.link}`} target="_blank" rel="noopener noreferrer">View Product</a>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
